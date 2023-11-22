@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 male_names = []
 female_names = []
+unknown_names = []  
 
 with open("/Users/nooruljaasim/Downloads/Names.csv", 'r') as file:
     reader = csv.reader(file)
@@ -38,36 +39,31 @@ for name in female_names:
     except Exception as e:
         print(f"Error occurred for name '{name}': {e}")
 
+# Perform classification for unknown names
+classified_unknown_names = []
+for name in unknown_names:
+    try:
+        response = requests.get(f'https://api.genderize.io/?name={name}')
+        data = response.json()
+        classified_name = {'name': name, 'gender': data['gender'], 'probability': data['probability'],
+                           'count': data['count']}
+        classified_unknown_names.append(classified_name)
+        print(classified_name)
+    except Exception as e:
+        print(f"Error occurred for name '{name}': {e}")
+
 # Create two separate lists for male, female, and unknown names from classified names
 male_names = [name['name'] for name in classified_male_names if name['gender'] == 'male']
 female_names = [name['name'] for name in classified_female_names if name['gender'] == 'female']
-unknown_names = [name['name'] for name in classified_male_names if name['gender'] not in ['male', 'female']]
+unknown_names = [name['name'] for name in classified_unknown_names if name['gender'] not in ['male', 'female']]
 
 # Write the classified names to a CSV file
-with open('classified_names.csv', 'w', newline='') as file:
+with open('classified_output_names.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['Name', 'Gender'])
     for name in classified_male_names + classified_female_names:
         writer.writerow([name['name'], name['gender']])
 
-# Write the male, female, and unknown names to separate CSV files
-with open('male_names.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['Name'])
-    for name in male_names:
-        writer.writerow([name])
-
-with open('female_names.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['Name'])
-    for name in female_names:
-        writer.writerow([name])
-
-with open('unknown_names.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['Name'])
-    for name in unknown_names:
-        writer.writerow([name])
 
 # Count the number of males, females, and unknowns
 num_males = sum(1 for name in classified_male_names if name['gender'] == 'male')
