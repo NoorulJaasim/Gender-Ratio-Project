@@ -1,0 +1,135 @@
+import csv
+import requests
+import math
+import matplotlib.pyplot as plt
+
+male_names = []
+female_names = []
+
+with open("/Users/nooruljaasim/Downloads/Names.csv", 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        male_names.append(row[0])  # Assuming male names are in the first column
+        female_names.append(row[1])  # Assuming female names are in the second column
+
+# Perform classification for male names
+classified_male_names = []
+for name in male_names:
+    try:
+        response = requests.get(f'https://api.genderize.io/?name={name}')
+        data = response.json()
+        classified_name = {'name': name, 'gender': data['gender'], 'probability': data['probability'],
+                           'count': data['count']}
+        classified_male_names.append(classified_name)
+        print(classified_name)
+    except Exception as e:
+        print(f"Error occurred for name '{name}': {e}")
+
+# Perform classification for female names
+classified_female_names = []
+for name in female_names:
+    try:
+        response = requests.get(f'https://api.genderize.io/?name={name}')
+        data = response.json()
+        classified_name = {'name': name, 'gender': data['gender'], 'probability': data['probability'],
+                           'count': data['count']}
+        classified_female_names.append(classified_name)
+        print(classified_name)
+    except Exception as e:
+        print(f"Error occurred for name '{name}': {e}")
+
+# Create two separate lists for male, female, and unknown names from classified names
+male_names = [name['name'] for name in classified_male_names if name['gender'] == 'male']
+female_names = [name['name'] for name in classified_female_names if name['gender'] == 'female']
+unknown_names = [name['name'] for name in classified_male_names if name['gender'] not in ['male', 'female']]
+
+# Write the classified names to a CSV file
+with open('classified_names.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Name', 'Gender'])
+    for name in classified_male_names + classified_female_names:
+        writer.writerow([name['name'], name['gender']])
+
+# Write the male, female, and unknown names to separate CSV files
+with open('male_names.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Name'])
+    for name in male_names:
+        writer.writerow([name])
+
+with open('female_names.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Name'])
+    for name in female_names:
+        writer.writerow([name])
+
+with open('unknown_names.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Name'])
+    for name in unknown_names:
+        writer.writerow([name])
+
+# Count the number of males, females, and unknowns
+num_males = sum(1 for name in classified_male_names if name['gender'] == 'male')
+num_females = sum(1 for name in classified_female_names if name['gender'] == 'female')
+num_unknowns = len(unknown_names)
+
+# Print the counts
+print(f"Number of Males: {num_males}")
+print(f"Number of Females: {num_females}")
+print(f"Number of Unknowns: {num_unknowns}")
+
+# Calculate the greatest common divisor
+gcd = math.gcd(num_females, num_males)
+
+# Calculate the simplified ratio of females to males
+simplified_ratio = f"{num_females // gcd}:{num_males // gcd}"
+
+# Print the simplified ratio
+print(f"Simplified Ratio of Females to Males: {simplified_ratio}")
+
+# Calculate the disparity between the number of males and females
+disparity = abs(num_females - num_males)
+
+# Print the disparity
+if num_females > num_males:
+    print(f"There are more females than males by {disparity} people.")
+elif num_males > num_females:
+    print(f"There are more males than females by {disparity} people.")
+else:
+    print("Both genders have an equal number of people.")
+
+# Include unknowns in total count
+total_people = num_females + num_males + num_unknowns
+percentage_disparity = (disparity / total_people) * 100
+
+# Calculate the percentage disparity
+percentage_disparity = (disparity / total_people) * 100
+
+# Print the percentage disparity
+if num_females > num_males:
+    print(f"There are more females than males by {disparity} people, which is {percentage_disparity:.2f}% of the total population.")
+    percentage_higher_gender = (num_females / total_people) * 100
+    print(f"The percentage of females is {percentage_higher_gender:.2f}% and the percentage of males is {100 - percentage_higher_gender:.2f}%.")
+elif num_males > num_females:
+    print(f"There are more males than females by {disparity} people, which is {percentage_disparity:.2f}% of the total population.")
+    percentage_higher_gender = (num_males / total_people) * 100
+    print(f"The percentage of males is {percentage_higher_gender:.2f}% and the percentage of females is {100 - percentage_higher_gender:.2f}%.")
+else:
+    print("Both genders have an equal number of people. Percentage disparity is zero.")
+    
+    # Data for plotting
+labels = ['Male', 'Female', 'Unknown']
+sizes = [num_males, num_females, num_unknowns]
+
+# Create a pie chart
+plt.pie(sizes, labels=labels, autopct='%1.1f%%', colors=['blue', 'pink', 'gray'], startangle=140)
+plt.title('Distribution of Males, Females, and Unknowns')
+
+# Show the plot
+plt.show()
+# Calculate the percentage difference between males and females
+percentage_difference = abs((num_females / total_people * 100) - (num_males / total_people * 100))
+
+# Print the percentage difference
+print(f"Percentage Difference between Males and Females: {percentage_difference:.2f}%")
